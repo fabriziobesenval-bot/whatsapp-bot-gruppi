@@ -1,0 +1,4 @@
+{
+  "_istruzioni": "Al primo avvio il bot aggiunge qui tutti i tuoi gruppi, spenti (modalita: off). Per ogni gruppo imposta: modalita = off | auto | approva ; quando = menzione | parole | sempre ; parole = elenco di parole chiave (solo con quando=parole) ; istruzioni = cosa deve sapere/fare il bot in quel gruppo ; maxOra = numero massimo di risposte all'ora. Le modifiche valgono subito, senza riavviare.",
+  "gruppi": {}
+}

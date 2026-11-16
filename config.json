@@ -1,0 +1,19 @@
+{
+  "ai": "ollama",
+  "ollama": {
+    "indirizzo": "http://localhost:11434",
+    "modello": "gemma4:e4b"
+  },
+  "gemini": {
+    "apiKey": "INCOLLA-QUI-LA-CHIAVE-GRATUITA-SOLO-SE-USI-GEMINI",
+    "modello": "gemini-flash-lite-latest"
+  },
+  "mioNome": "Mario",
+  "istruzioniGenerali": "Rispondi in una chat di gruppo WhatsApp a nome di Mario. Scrivi sempre in italiano, in modo breve e naturale, come un normale messaggio WhatsApp: niente elenchi puntati, niente formalità, al massimo 2-3 frasi. Non inventare impegni, date o promesse a nome di Mario: se non sai una cosa, rispondi in modo vago o dì che ci risentite.",
+  "firma": "",
+  "pausaMinSecondi": 10,
+  "pausaMaxSecondi": 30,
+  "messaggiDiContesto": 20,
+  "notificaSuTelefono": true,
+  "porta": 3001
+}

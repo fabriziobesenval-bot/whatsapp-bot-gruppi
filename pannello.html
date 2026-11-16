@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bot WhatsApp – Bozze</title>
+<style>
+  :root { --verde:#1f8f5f; --bordo:#e3e6ea; --testo:#1d2329; --tenue:#6b7480; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; background:#f5f7f8; color:var(--testo); }
+  header { background:#fff; border-bottom:1px solid var(--bordo); padding:14px 24px; display:flex; align-items:center; gap:12px; }
+  header h1 { font-size:18px; margin:0; font-weight:600; }
+  .stato { margin-left:auto; font-size:13px; color:var(--tenue); display:flex; align-items:center; gap:6px; }
+  .pallino { width:9px; height:9px; border-radius:50%; background:#c9ced4; }
+  .pallino.ok { background:var(--verde); }
+  main { max-width:860px; margin:0 auto; padding:24px; }
+  h2 { font-size:14px; text-transform:uppercase; letter-spacing:.04em; color:var(--tenue); margin:28px 0 10px; }
+  .card { background:#fff; border:1px solid var(--bordo); border-radius:10px; padding:16px; margin-bottom:12px; }
+  .meta { font-size:13px; color:var(--tenue); margin-bottom:8px; }
+  .meta b { color:var(--testo); }
+  .originale { background:#f1f3f5; border-radius:8px; padding:8px 12px; margin-bottom:10px; white-space:pre-wrap; }
+  textarea { width:100%; min-height:80px; font:inherit; padding:10px 12px; border:1px solid var(--bordo); border-radius:8px; resize:vertical; }
+  textarea:focus { outline:2px solid #bfe3d2; border-color:var(--verde); }
+  .azioni { display:flex; gap:8px; margin-top:10px; }
+  button { font:inherit; padding:7px 16px; border-radius:8px; border:1px solid var(--bordo); background:#fff; cursor:pointer; }
+  button.invia { background:var(--verde); border-color:var(--verde); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  .vuoto { color:var(--tenue); padding:20px 0; }
+  .qr { text-align:center; }
+  .qr img { width:260px; height:260px; }
+  .recenti div { font-size:13px; padding:6px 0; border-bottom:1px solid var(--bordo); color:var(--tenue); }
+  .tag { display:inline-block; font-size:12px; padding:1px 8px; border-radius:20px; background:#eef0f2; margin:0 4px 6px 0; }
+  .tag.auto { background:#dff3ea; color:#14603f; }
+  .tag.approva { background:#fff3d6; color:#7a5600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bot WhatsApp · gruppi</h1>
+  <div class="stato"><span class="pallino" id="pallino"></span><span id="statoTesto">in avvio…</span></div>
+</header>
+<main>
+  <div id="qrBox" class="card qr" hidden>
+    <p>Apri WhatsApp sul telefono → <b>Dispositivi collegati</b> → <b>Collega un dispositivo</b> e inquadra:</p>
+    <img id="qrImg" alt="QR code" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
+  </div>
+
+  <h2>Bozze da approvare</h2>
+  <div id="bozze"></div>
+
+  <h2>Gruppi</h2>
+  <div id="gruppi"></div>
+
+  <h2>Ultime gestite</h2>
+  <div id="recenti" class="recenti"></div>
+</main>
+<script>
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const ora = (t) => new Date(t).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+
+async function azione(id, tipo, card) {
+  card.querySelectorAll('button').forEach((b) => (b.disabled = true));
+  const body = tipo === 'invia' ? JSON.stringify({ testo: card.querySelector('textarea').value }) : '{}';
+  const r = await fetch(`/api/bozze/${id}/${tipo}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body });
+  if (!r.ok) {
+    alert((await r.json()).errore || 'Errore');
+    card.querySelectorAll('button').forEach((b) => (b.disabled = false));
+    return;
+  }
+  card.remove();
+  aggiorna();
+}
+
+function creaCard(b) {
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.dataset.id = b.id;
+  el.innerHTML = `
+    <div class="meta">#${b.id} · <b>${esc(b.gruppo)}</b> · da ${esc(b.autore)} · ${ora(b.creata)}</div>
+    <div class="originale">${esc(b.originale)}</div>
+    <textarea>${esc(b.testo)}</textarea>
+    <div class="azioni">
+      <button class="invia">Invia</button>
+      <button class="scarta">Scarta</button>
+    </div>`;
+  el.querySelector('.invia').onclick = () => azione(b.id, 'invia', el);
+  el.querySelector('.scarta').onclick = () => azione(b.id, 'scarta', el);
+  return el;
+}
+
+async function aggiorna() {
+  let s;
+  try { s = await (await fetch('/api/stato')).json(); }
+  catch { document.getElementById('statoTesto').textContent = 'bot spento'; document.getElementById('pallino').className = 'pallino'; return; }
+
+  document.getElementById('pallino').className = 'pallino' + (s.pronto ? ' ok' : '');
+  document.getElementById('statoTesto').textContent = s.pronto ? 'collegato' : (s.qr ? 'in attesa del QR code' : 'in avvio…');
+  document.getElementById('qrBox').hidden = !s.qr;
+  if (s.qr) document.getElementById('qrImg').src = s.qr;
+
+  // aggiunge le bozze nuove senza toccare quelle che stai modificando
+  const box = document.getElementById('bozze');
+  const ids = new Set(s.bozze.map((b) => String(b.id)));
+  box.querySelectorAll('.card').forEach((c) => { if (!ids.has(c.dataset.id)) c.remove(); });
+  for (const b of s.bozze) if (!box.querySelector(`[data-id="${b.id}"]`)) box.appendChild(creaCard(b));
+  let v = box.querySelector('.vuoto');
+  if (!s.bozze.length && !v) box.insertAdjacentHTML('beforeend', '<div class="vuoto">Nessuna bozza in attesa.</div>');
+  if (s.bozze.length && v) v.remove();
+
+  document.getElementById('gruppi').innerHTML = s.gruppi.length
+    ? s.gruppi.map((g) => `<span class="tag ${esc(g.modalita)}">${esc(g.nome)} · ${esc(g.modalita)}</span>`).join('')
+    : '<div class="vuoto">Nessun gruppo ancora.</div>';
+
+  document.getElementById('recenti').innerHTML = s.recenti.length
+    ? s.recenti.map((b) => `<div>#${b.id} · ${esc(b.gruppo)} · ${b.stato === 'inviata' ? '✅ inviata' : '🗑 scartata'} · ${esc(b.testo.slice(0, 80))}</div>`).join('')
+    : '<div class="vuoto">Ancora niente.</div>';
+}
+aggiorna();
+setInterval(aggiorna, 4000);
+</script>
+</body>
+</html>

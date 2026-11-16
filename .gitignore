@@ -1,0 +1,17 @@
+# dipendenze
+node_modules/
+
+# sessione WhatsApp e cache del browser: NON pubblicarle mai
+.sessione/
+.wwebjs_auth/
+.wwebjs_cache/
+
+# dati personali generati dal bot
+bozze.json
+*.prima-*
+*.bak
+
+# varie
+.DS_Store
+Thumbs.db
+*.log
